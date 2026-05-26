@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+const G = "#c9a84c";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -32,20 +34,23 @@ export default function LoginPage() {
       <div className="text-center mb-8">
         <Link href="/" className="inline-flex items-center gap-3 mb-6">
           <div style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: "linear-gradient(135deg, rgba(0,242,255,0.15), rgba(139,92,246,0.2))",
-            border: "0.5px solid rgba(0,242,255,0.3)",
+            width: 44, height: 44, borderRadius: 12,
+            background: "linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.06))",
+            border: "0.5px solid rgba(201,168,76,0.4)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 16, fontWeight: 700, color: "#00f2ff",
+            fontSize: 18, fontWeight: 900, color: G,
           }}>D</div>
-          <span style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>David Training</span>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", letterSpacing: 0.5 }}>David Training</div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: "#52525b", letterSpacing: 1.5, textTransform: "uppercase" }}>Elite Coaching App</div>
+          </div>
         </Link>
-        <h1 style={{ fontSize: 28, fontWeight: 900, color: "#fff", marginBottom: 8 }}>Welcome back</h1>
-        <p style={{ fontSize: 14, color: "#a1a1aa" }}>Sign in to your account to continue</p>
+        <h1 style={{ fontSize: 26, fontWeight: 900, color: "#fff", marginBottom: 8 }}>Welcome back</h1>
+        <p style={{ fontSize: 13, color: "#71717a" }}>Sign in to your account to continue</p>
       </div>
 
       {/* Card */}
-      <div className="glass rounded-2xl p-8" style={{ border: "0.5px solid rgba(0,242,255,0.12)" }}>
+      <div className="glass rounded-2xl p-8" style={{ border: "0.5px solid rgba(201,168,76,0.18)" }}>
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
 
           {error && (
@@ -58,7 +63,7 @@ export default function LoginPage() {
           )}
 
           <div className="flex flex-col gap-2">
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#a1a1aa", letterSpacing: "0.5px", textTransform: "uppercase" }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "#71717a", letterSpacing: 1, textTransform: "uppercase" }}>
               Email
             </label>
             <input
@@ -72,17 +77,17 @@ export default function LoginPage() {
                 borderRadius: 10, padding: "12px 14px", fontSize: 14, color: "#fff",
                 outline: "none", width: "100%",
               }}
-              onFocus={e => e.target.style.borderColor = "rgba(0,242,255,0.4)"}
+              onFocus={e => e.target.style.borderColor = "rgba(201,168,76,0.5)"}
               onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
             />
           </div>
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#a1a1aa", letterSpacing: "0.5px", textTransform: "uppercase" }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#71717a", letterSpacing: 1, textTransform: "uppercase" }}>
                 Password
               </label>
-              <Link href="/forgot-password" style={{ fontSize: 12, color: "#00f2ff" }}>
+              <Link href="/forgot-password" style={{ fontSize: 12, color: G, fontWeight: 500 }}>
                 Forgot password?
               </Link>
             </div>
@@ -97,7 +102,7 @@ export default function LoginPage() {
                 borderRadius: 10, padding: "12px 14px", fontSize: 14, color: "#fff",
                 outline: "none", width: "100%",
               }}
-              onFocus={e => e.target.style.borderColor = "rgba(0,242,255,0.4)"}
+              onFocus={e => e.target.style.borderColor = "rgba(201,168,76,0.5)"}
               onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
             />
           </div>
@@ -106,21 +111,24 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
             style={{
-              background: loading ? "rgba(0,242,255,0.3)" : "linear-gradient(135deg, #00f2ff, #8b5cf6)",
-              color: "#050505", border: "none", borderRadius: 12,
-              padding: "14px", fontSize: 14, fontWeight: 700,
+              background: loading
+                ? "rgba(201,168,76,0.3)"
+                : `linear-gradient(135deg, ${G}, #e8d5a3)`,
+              color: "#080808", border: "none", borderRadius: 12,
+              padding: "14px", fontSize: 14, fontWeight: 800,
               cursor: loading ? "not-allowed" : "pointer",
               transition: "all 0.2s",
-              boxShadow: loading ? "none" : "0 0 24px rgba(0,242,255,0.2)",
+              boxShadow: loading ? "none" : "0 0 28px rgba(201,168,76,0.25)",
+              letterSpacing: 0.3,
             }}
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "#a1a1aa" }}>
+        <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "#71717a" }}>
           Don&apos;t have an account?{" "}
-          <Link href="/register" style={{ color: "#00f2ff", fontWeight: 600 }}>
+          <Link href="/register" style={{ color: G, fontWeight: 700 }}>
             Join now
           </Link>
         </p>

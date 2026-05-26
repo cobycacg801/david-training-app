@@ -106,10 +106,10 @@ export default function LandingPage() {
             color: G, background: "rgba(201,168,76,0.08)", border: "0.5px solid rgba(201,168,76,0.25)",
             borderRadius: 20, padding: "5px 14px", marginBottom: 24,
           }}>
-            HOUSTON · MIAMI · ONLINE
+            MIAMI · HOUSTON · ONLINE
           </span>
 
-          <h1 style={{ fontSize: 56, fontWeight: 900, lineHeight: 1.08, color: "#fff", marginBottom: 24, letterSpacing: -1 }}>
+          <h1 style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.1, color: "#fff", marginBottom: 24, letterSpacing: -0.5 }}>
             Train with the{" "}
             <span className="text-gradient">best version</span>
             <br />of yourself.
