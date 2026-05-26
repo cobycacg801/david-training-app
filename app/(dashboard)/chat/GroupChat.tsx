@@ -132,7 +132,6 @@ export default function GroupChat({
     const channel = supabase
       .channel("group-chat-room")
       .on(
-        // @ts-expect-error — Supabase generic typing
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "group_messages" },
         async (payload: { new: ChatMessage }) => {
