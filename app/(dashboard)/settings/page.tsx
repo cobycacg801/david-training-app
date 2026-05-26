@@ -11,11 +11,11 @@ export default async function Settings() {
 
   const [{ data: profile }, { data: membership }] = await Promise.all([
     db.from("profiles")
-      .select("full_name, email, phone")
+      .select("full_name, email, phone, avatar_url, fitness_goal, height, weight, notify_sms, notify_email")
       .eq("id", user.id)
       .single(),
     db.from("memberships")
-      .select("plan, status")
+      .select("plan, status, stripe_customer_id, current_period_end")
       .eq("user_id", user.id)
       .single(),
   ]);
@@ -26,7 +26,16 @@ export default async function Settings() {
       fullName={profile?.full_name ?? ""}
       email={profile?.email ?? user.email ?? ""}
       phone={profile?.phone ?? ""}
+      avatarUrl={profile?.avatar_url ?? ""}
+      fitnessGoal={profile?.fitness_goal ?? ""}
+      height={profile?.height ?? ""}
+      weight={profile?.weight ?? ""}
+      notifySms={profile?.notify_sms ?? true}
+      notifyEmail={profile?.notify_email ?? true}
       plan={membership?.plan ?? "base"}
+      membershipStatus={membership?.status ?? "active"}
+      hasStripe={!!membership?.stripe_customer_id}
+      nextChargeDate={membership?.current_period_end ?? null}
     />
   );
 }
