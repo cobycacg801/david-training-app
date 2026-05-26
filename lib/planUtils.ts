@@ -15,8 +15,8 @@ export const PLAN_PRICE: Record<string, string> = {
 
 export const PLAN_COLOR: Record<string, string> = {
   base:  "#a1a1aa",
-  pro:   "#00f2ff",
-  elite: "#8b5cf6",
+  pro:   "#c9a84c",
+  elite: "#e8d5a3",
 };
 
 export const PLAN_PERKS: Record<string, string[]> = {
