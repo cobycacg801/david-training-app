@@ -253,7 +253,7 @@ export default function BookingPage({
           <button
             type="submit" disabled={submitting}
             style={{
-              padding: "14px 0", borderRadius: 12, border: "none",
+              padding: "14px 0", borderRadius: 12,
               background: submitting ? "rgba(0,242,255,0.05)" : "linear-gradient(135deg,rgba(0,242,255,0.12),rgba(139,92,246,0.18))",
               border: "0.5px solid rgba(0,242,255,0.3)",
               fontSize: 14, fontWeight: 800, color: submitting ? "#52525b" : "#00f2ff",

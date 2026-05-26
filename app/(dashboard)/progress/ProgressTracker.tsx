@@ -331,7 +331,7 @@ export default function ProgressTracker({
                 onClick={handleUpload}
                 disabled={uploading}
                 style={{
-                  flex: 1, padding: "11px 0", borderRadius: 10, border: "none",
+                  flex: 1, padding: "11px 0", borderRadius: 10,
                   background: uploading
                     ? "rgba(0,242,255,0.05)"
                     : "linear-gradient(135deg,rgba(0,242,255,0.15),rgba(139,92,246,0.15))",

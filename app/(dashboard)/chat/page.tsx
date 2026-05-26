@@ -34,7 +34,7 @@ export default async function ChatPage() {
 
   return (
     <GroupChat
-      initialMessages={(messages as ChatMessage[]) ?? []}
+      initialMessages={(messages as unknown as ChatMessage[]) ?? []}
       userId={user.id}
       userName={profile?.full_name ?? user.email?.split("@")[0] ?? "Member"}
       userPlan={membership?.plan ?? "base"}
