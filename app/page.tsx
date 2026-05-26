@@ -154,48 +154,65 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Right — Hero Image */}
+        {/* Right — David's Photo */}
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
           <div style={{
             position: "relative",
-            width: "100%", maxWidth: 500,
-            borderRadius: 24, overflow: "hidden",
-            border: "0.5px solid rgba(201,168,76,0.2)",
-            boxShadow: "0 0 80px rgba(201,168,76,0.1), 0 40px 80px rgba(0,0,0,0.5)",
+            width: "100%", maxWidth: 460,
+            borderRadius: 28, overflow: "hidden",
+            border: "0.5px solid rgba(201,168,76,0.25)",
+            boxShadow: "0 0 100px rgba(201,168,76,0.12), 0 0 40px rgba(201,168,76,0.06), 0 40px 80px rgba(0,0,0,0.7)",
           }}>
-            {/*
-              Replace this section with David's actual photo:
-              <Image src="/david-photo.jpg" alt="Coach David" width={500} height={620} style={{ objectFit: "cover", display: "block" }} />
-            */}
             <Image
-              src="/David training app 2.png"
-              alt="David Training — Elite Coaching Platform"
-              width={500}
-              height={620}
-              style={{ width: "100%", height: "auto", display: "block" }}
+              src="/david.jpg"
+              alt="Coach David — Elite Fitness Coach"
+              width={460}
+              height={580}
+              style={{ width: "100%", height: "auto", display: "block", objectFit: "cover" }}
               priority
             />
-            {/* Gold overlay gradient at bottom */}
+
+            {/* Bottom fade into page background */}
             <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0, height: 120,
-              background: "linear-gradient(to top, rgba(8,8,8,0.9), transparent)",
+              position: "absolute", bottom: 0, left: 0, right: 0, height: 160,
+              background: "linear-gradient(to top, rgba(8,8,8,1) 0%, rgba(8,8,8,0.6) 50%, transparent 100%)",
               pointerEvents: "none",
             }} />
+
+            {/* Name tag overlay */}
             <div style={{
-              position: "absolute", bottom: 20, left: 20, right: 20,
-              display: "flex", alignItems: "center", justifyContent: "space-between",
+              position: "absolute", bottom: 24, left: 24, right: 24,
+              display: "flex", alignItems: "flex-end", justifyContent: "space-between",
             }}>
               <div>
-                <div style={{ fontSize: 11, color: G, fontWeight: 700, letterSpacing: 2 }}>COACH DAVID</div>
-                <div style={{ fontSize: 13, color: "#fff", fontWeight: 600 }}>Elite Coaching Platform</div>
+                <div style={{ fontSize: 10, color: G, fontWeight: 800, letterSpacing: 3, marginBottom: 4 }}>
+                  COACH DAVID
+                </div>
+                <div style={{ fontSize: 20, color: "#fff", fontWeight: 900, letterSpacing: -0.5 }}>
+                  Pedro David Perez
+                </div>
+                <div style={{ fontSize: 11, color: "#71717a", fontWeight: 500, marginTop: 2 }}>
+                  162K Followers · Houston & Miami
+                </div>
               </div>
               <Link href="/register" style={{
                 fontSize: 11, fontWeight: 700, color: "#080808", textDecoration: "none",
-                padding: "8px 16px", borderRadius: 8,
+                padding: "9px 16px", borderRadius: 10, flexShrink: 0,
                 background: `linear-gradient(135deg, ${G}, #e8d5a3)`,
+                boxShadow: "0 0 16px rgba(201,168,76,0.3)",
               }}>
-                Start Now
+                Train Now →
               </Link>
+            </div>
+
+            {/* Gold corner accent */}
+            <div style={{
+              position: "absolute", top: 20, right: 20,
+              background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.3)",
+              borderRadius: 20, padding: "5px 12px",
+              fontSize: 9, fontWeight: 800, color: G, letterSpacing: 2,
+            }}>
+              ELITE COACH
             </div>
           </div>
         </div>
