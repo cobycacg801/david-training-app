@@ -339,25 +339,63 @@ export default function LandingPage() {
       </section>
 
       {/* ── FOOTER ─────────────────────────────── */}
-      <footer style={{ borderTop: "0.5px solid rgba(255,255,255,0.05)", padding: "28px 32px", marginTop: 40 }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: G }}>D</div>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#fff", letterSpacing: 1 }}>DAVID TRAINING</div>
-              <div style={{ fontSize: 9, color: "#3f3f46", letterSpacing: 1 }}>ELITE COACHING PLATFORM</div>
+      <footer style={{ borderTop: "0.5px solid rgba(255,255,255,0.05)", padding: "32px 32px 28px", marginTop: 40 }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+
+          {/* Top row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 28 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: G }}>D</div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#fff", letterSpacing: 1 }}>DAVID TRAINING</div>
+                <div style={{ fontSize: 9, color: "#3f3f46", letterSpacing: 1 }}>ELITE COACHING PLATFORM</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 20, fontSize: 12, color: "#52525b" }}>
+              <Link href="/login" style={{ color: "#52525b", textDecoration: "none" }}>Sign In</Link>
+              <Link href="/register" style={{ color: G, textDecoration: "none", fontWeight: 600 }}>Join Now</Link>
             </div>
           </div>
-          <p style={{ fontSize: 11, color: "#3f3f46" }}>
-            Platform built by{" "}
-            <a href="https://makaiusgroup.com" target="_blank" rel="noopener noreferrer" style={{ color: "#52525b" }}>
-              Makai US Group LLC
+
+          {/* Makai branding strip */}
+          <div style={{
+            borderTop: "0.5px solid rgba(255,255,255,0.05)",
+            paddingTop: 20,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            gap: 14, flexWrap: "wrap",
+          }}>
+            <span style={{ fontSize: 10, color: "#52525b", letterSpacing: 0.5 }}>
+              Designed &amp; built by
+            </span>
+            <a
+              href="https://makaiusgroup.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex", alignItems: "center", gap: 8, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8,
+                background: "rgba(255,255,255,0.03)",
+                border: "0.5px solid rgba(255,255,255,0.1)",
+                transition: "border-color 0.2s",
+              }}
+            >
+              <div style={{
+                width: 20, height: 20, borderRadius: 5,
+                background: "linear-gradient(135deg,#1a3a2a,#0d2018)",
+                border: "0.5px solid rgba(62,207,142,0.4)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 9, fontWeight: 900, color: "#3ecf8e", flexShrink: 0,
+              }}>M</div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#a1a1aa", letterSpacing: 0.5 }}>
+                Makai US Group LLC
+              </span>
+              <span style={{ fontSize: 9, color: "#52525b" }}>↗</span>
             </a>
-          </p>
-          <div style={{ display: "flex", gap: 20, fontSize: 12, color: "#52525b" }}>
-            <Link href="/login" style={{ color: "#52525b", textDecoration: "none" }}>Sign In</Link>
-            <Link href="/register" style={{ color: G, textDecoration: "none", fontWeight: 600 }}>Join Now</Link>
+            <span style={{ fontSize: 10, color: "#3f3f46", letterSpacing: 0.5 }}>
+              Digital solutions for creators &amp; coaches
+            </span>
           </div>
+
         </div>
       </footer>
 

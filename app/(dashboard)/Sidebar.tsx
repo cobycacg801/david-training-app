@@ -149,6 +149,31 @@ export default function Sidebar({ userName, userInitial, plan, isAdmin }: Props)
             Sign Out
           </button>
         </form>
+
+        {/* Makai branding */}
+        <a
+          href="https://makaiusgroup.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            marginTop: 12, padding: "7px 0", borderRadius: 7, textDecoration: "none",
+            background: "rgba(62,207,142,0.04)",
+            border: "0.5px solid rgba(62,207,142,0.15)",
+            transition: "border-color 0.2s",
+          }}
+        >
+          <div style={{
+            width: 14, height: 14, borderRadius: 3,
+            background: "linear-gradient(135deg,#1a3a2a,#0d2018)",
+            border: "0.5px solid rgba(62,207,142,0.4)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 7, fontWeight: 900, color: "#3ecf8e", flexShrink: 0,
+          }}>M</div>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#3ecf8e", letterSpacing: 0.5 }}>
+            Makai US Group LLC
+          </span>
+        </a>
       </div>
     </aside>
   );
