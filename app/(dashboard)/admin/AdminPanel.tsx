@@ -429,10 +429,26 @@ function RecipeModal({
     ingredients:  (editing?.ingredients ?? []).join("\n"),
     instructions: (editing?.instructions ?? []).join("\n"),
     min_plan:     editing?.min_plan     ?? "base",
+    image_url:    editing?.image_url    ?? "",
   });
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
+  const [saving,       setSaving]       = useState(false);
+  const [uploading,    setUploading]    = useState(false);
+  const [err,          setErr]          = useState("");
   const set = (k: string, v: string | number) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true); setErr("");
+    const supabase = createClient();
+    const ext  = file.name.split(".").pop();
+    const path = `${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("recipe-images")
+      .upload(path, file, { upsert: true });
+    if (upErr) { setErr("Image upload failed: " + upErr.message); setUploading(false); return; }
+    const { data: { publicUrl } } = supabase.storage.from("recipe-images").getPublicUrl(path);
+    setForm(f => ({ ...f, image_url: publicUrl }));
+    setUploading(false);
+  };
 
   const handleSave = async () => {
     if (!form.title.trim()) { setErr("Title is required."); return; }
@@ -447,6 +463,7 @@ function RecipeModal({
       ingredients:  form.ingredients.split("\n").map(s => s.trim()).filter(Boolean),
       instructions: form.instructions.split("\n").map(s => s.trim()).filter(Boolean),
       min_plan:     form.min_plan,
+      image_url:    form.image_url || null,
     };
 
     if (isEdit) {
@@ -495,12 +512,51 @@ function RecipeModal({
               )}
             </div>
           ))}
+
+          {/* Image upload */}
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 700, color: "#52525b", letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+              Recipe Image
+            </label>
+
+            {/* Preview */}
+            {form.image_url && (
+              <div style={{ position: "relative", marginBottom: 10, borderRadius: 10, overflow: "hidden", border: "0.5px solid rgba(139,92,246,0.2)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={form.image_url} alt="Recipe" style={{ width: "100%", maxHeight: 160, objectFit: "cover", display: "block" }} />
+                <button
+                  onClick={() => setForm(f => ({ ...f, image_url: "" }))}
+                  style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.7)", border: "none", borderRadius: 6, padding: "4px 8px", fontSize: 11, color: "#f87171", cursor: "pointer" }}
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            {/* Upload zone */}
+            <label style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              padding: "14px", borderRadius: 8, cursor: uploading ? "not-allowed" : "pointer",
+              background: "rgba(139,92,246,0.05)", border: "0.5px dashed rgba(139,92,246,0.3)",
+              fontSize: 12, color: uploading ? "#52525b" : "#8b5cf6", fontWeight: 600,
+              transition: "all 0.15s",
+            }}>
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                disabled={uploading}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }}
+              />
+              {uploading ? "⏳ Uploading…" : form.image_url ? "📷 Replace Image" : "📷 Upload Image"}
+            </label>
+          </div>
         </div>
 
         {err && <p style={{ fontSize: 12, color: "#f87171", marginTop: 12 }}>⚠ {err}</p>}
 
         <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-          <button onClick={handleSave} disabled={saving} style={{ flex: 1, padding: "12px 0", borderRadius: 10, background: "linear-gradient(135deg,rgba(139,92,246,0.12),rgba(139,92,246,0.22))", border: "0.5px solid rgba(139,92,246,0.35)", fontSize: 13, fontWeight: 700, color: "#8b5cf6", cursor: "pointer" }}>
+          <button onClick={handleSave} disabled={saving || uploading} style={{ flex: 1, padding: "12px 0", borderRadius: 10, background: "linear-gradient(135deg,rgba(139,92,246,0.12),rgba(139,92,246,0.22))", border: "0.5px solid rgba(139,92,246,0.35)", fontSize: 13, fontWeight: 700, color: "#8b5cf6", cursor: "pointer" }}>
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Recipe"}
           </button>
           <button onClick={onClose} style={{ padding: "12px 20px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.08)", fontSize: 13, color: "#71717a", cursor: "pointer" }}>Cancel</button>
