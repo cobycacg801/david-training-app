@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Sidebar from "./Sidebar";
+import MobileNav from "./MobileNav";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -30,6 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <main className="sidebar-content" style={{ padding: "32px 36px", minHeight: "100vh" }}>
         {children}
       </main>
+      <MobileNav />
     </div>
   );
 }

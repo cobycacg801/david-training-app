@@ -1,54 +1,141 @@
+"use client";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
 const G = "#c9a84c";
 
-const plans = [
-  {
-    name: "Base",
-    price: "$19",
-    tag: "GET STARTED",
-    description: "Full access to the workout library and nutrition recipes.",
-    features: ["Full workout video library", "Healthy recipes & meal guides", "Progress photo tracking", "Community feed access"],
-    cta: "Join Base",
-    href: "/register?plan=base",
-    highlight: false,
-    vip: false,
+const translations = {
+  en: {
+    navSignIn: "Sign In",
+    navJoin: "Join Now",
+    heroBadge: "MIAMI · HOUSTON · ONLINE",
+    heroH1a: "Train with the",
+    heroH1b: "best version",
+    heroH1c: "of yourself.",
+    heroDesc: "Coach David brings elite fitness, real nutrition, and personal accountability to one platform. Built for people who are serious about results.",
+    heroCta1: "Start Your Journey →",
+    heroCta2: "See Pricing",
+    stats: [
+      { value: "162K+",  label: "Followers"   },
+      { value: "2,700+", label: "Posts"        },
+      { value: "3 Tiers",label: "Membership"   },
+      { value: "Houston",label: "& Miami"      },
+    ],
+    photoSub:   "162K Followers · Houston & Miami",
+    photoBtn:   "Train Now →",
+    photoBadge: "ELITE COACH",
+    featBadge:  "EVERYTHING YOU NEED",
+    featH2:     "One platform. Total focus.",
+    features: [
+      { icon: "▶",  title: "Workout Library",    desc: "Hundreds of videos across strength, HIIT, mobility and more — updated weekly." },
+      { icon: "🥗", title: "Nutrition Plans",    desc: "Recipes, meal plans and macros designed to fuel your training." },
+      { icon: "💬", title: "Community Chat",     desc: "Train alongside David's community. Group motivation, real accountability." },
+      { icon: "🔒", title: "Private Coaching",   desc: "Direct 1:1 messages with Coach David. Elite-only personalized guidance." },
+      { icon: "📈", title: "Progress Tracking",  desc: "Upload your photos and videos. Watch your transformation over time." },
+      { icon: "📅", title: "Book Sessions",      desc: "Schedule in-person or online sessions directly through the platform." },
+    ],
+    pricingBadge: "MEMBERSHIP PLANS",
+    pricingH2:    "Choose your level.",
+    pricingSub:   "Cancel anytime. No contracts.",
+    plans: [
+      {
+        name: "Base",   price: "$19", tag: "GET STARTED",  highlight: false, vip: false,
+        href: "/register?plan=base",
+        description: "Full access to the workout library and nutrition recipes.",
+        features: ["Full workout video library", "Healthy recipes & meal guides", "Progress photo tracking", "Community feed access"],
+        cta: "Join Base",
+      },
+      {
+        name: "Pro",    price: "$39", tag: "MOST POPULAR", highlight: true,  vip: false,
+        href: "/register?plan=pro",
+        description: "Everything in Base plus community chat and full meal plans.",
+        features: ["Everything in Base", "Group chat community", "Full meal plan library", "Weekly content drops", "Early access to programs"],
+        cta: "Go Pro",
+      },
+      {
+        name: "Elite",  price: "$79", tag: "VIP ELITE",    highlight: false, vip: true,
+        href: "/register?plan=elite",
+        description: "The full experience. Private coaching with David.",
+        features: ["Everything in Pro", "Private 1:1 chat with David", "Monthly coaching session", "Custom workout adjustments", "Priority response"],
+        cta: "Go Elite",
+      },
+    ],
+    ctaLock: "UNLOCK EXCLUSIVE TRAINING",
+    ctaBtn:  "START YOUR TRANSFORMATION →",
+    footerSignIn:  "Sign In",
+    footerJoin:    "Join Now",
+    footerBuiltBy: "Designed & built by",
+    footerTagline: "Digital solutions for creators & coaches",
   },
-  {
-    name: "Pro",
-    price: "$39",
-    tag: "MOST POPULAR",
-    description: "Everything in Base plus community chat and full meal plans.",
-    features: ["Everything in Base", "Group chat community", "Full meal plan library", "Weekly content drops", "Early access to programs"],
-    cta: "Go Pro",
-    href: "/register?plan=pro",
-    highlight: true,
-    vip: false,
+  es: {
+    navSignIn: "Iniciar sesión",
+    navJoin: "Únete ahora",
+    heroBadge: "MIAMI · HOUSTON · EN LÍNEA",
+    heroH1a: "Entrena con la",
+    heroH1b: "mejor versión",
+    heroH1c: "de ti mismo.",
+    heroDesc: "Coach David te trae entrenamiento de élite, nutrición real y responsabilidad personal en una sola plataforma. Diseñado para quienes van en serio.",
+    heroCta1: "Comienza tu camino →",
+    heroCta2: "Ver precios",
+    stats: [
+      { value: "162K+",       label: "Seguidores"   },
+      { value: "2,700+",      label: "Publicaciones" },
+      { value: "3 Niveles",   label: "Membresía"    },
+      { value: "Houston",     label: "& Miami"       },
+    ],
+    photoSub:   "162K Seguidores · Houston & Miami",
+    photoBtn:   "Entrena ya →",
+    photoBadge: "COACH ÉLITE",
+    featBadge:  "TODO LO QUE NECESITAS",
+    featH2:     "Una plataforma. Enfoque total.",
+    features: [
+      { icon: "▶",  title: "Biblioteca de Entrenamientos", desc: "Cientos de videos de fuerza, HIIT, movilidad y más — actualizados cada semana." },
+      { icon: "🥗", title: "Planes de Nutrición",          desc: "Recetas, planes de comida y macros diseñados para potenciar tu entrenamiento." },
+      { icon: "💬", title: "Chat Comunitario",             desc: "Entrena junto a la comunidad de David. Motivación grupal, responsabilidad real." },
+      { icon: "🔒", title: "Coaching Privado",             desc: "Mensajes directos 1:1 con Coach David. Orientación personalizada solo para Elite." },
+      { icon: "📈", title: "Seguimiento de Progreso",      desc: "Sube tus fotos y videos. Observa tu transformación con el tiempo." },
+      { icon: "📅", title: "Reserva de Sesiones",          desc: "Agenda sesiones presenciales o en línea directamente desde la plataforma." },
+    ],
+    pricingBadge: "PLANES DE MEMBRESÍA",
+    pricingH2:    "Elige tu nivel.",
+    pricingSub:   "Cancela cuando quieras. Sin contratos.",
+    plans: [
+      {
+        name: "Base",   price: "$19", tag: "COMENZAR",    highlight: false, vip: false,
+        href: "/register?plan=base",
+        description: "Acceso completo a la biblioteca de ejercicios y recetas de nutrición.",
+        features: ["Biblioteca completa de videos", "Recetas saludables y guías de comida", "Seguimiento de fotos de progreso", "Acceso al feed comunitario"],
+        cta: "Unirme al Base",
+      },
+      {
+        name: "Pro",    price: "$39", tag: "MÁS POPULAR", highlight: true,  vip: false,
+        href: "/register?plan=pro",
+        description: "Todo en Base más chat comunitario y planes de comida completos.",
+        features: ["Todo en Base", "Chat comunitario grupal", "Biblioteca completa de planes", "Contenido semanal exclusivo", "Acceso anticipado a programas"],
+        cta: "Ir al Pro",
+      },
+      {
+        name: "Elite",  price: "$79", tag: "VIP ÉLITE",   highlight: false, vip: true,
+        href: "/register?plan=elite",
+        description: "La experiencia completa. Coaching privado con David.",
+        features: ["Todo en Pro", "Chat privado 1:1 con David", "Sesión de coaching mensual", "Ajustes de entrenamiento personalizados", "Respuesta prioritaria"],
+        cta: "Ir al Elite",
+      },
+    ],
+    ctaLock: "DESBLOQUEA ENTRENAMIENTO EXCLUSIVO",
+    ctaBtn:  "COMIENZA TU TRANSFORMACIÓN →",
+    footerSignIn:  "Iniciar sesión",
+    footerJoin:    "Únete ahora",
+    footerBuiltBy: "Diseñado y desarrollado por",
+    footerTagline: "Soluciones digitales para creadores y coaches",
   },
-  {
-    name: "Elite",
-    price: "$79",
-    tag: "VIP ELITE",
-    description: "The full experience. Private coaching with David.",
-    features: ["Everything in Pro", "Private 1:1 chat with David", "Monthly coaching session", "Custom workout adjustments", "Priority response"],
-    cta: "Go Elite",
-    href: "/register?plan=elite",
-    highlight: false,
-    vip: true,
-  },
-];
-
-const features = [
-  { icon: "▶", title: "Workout Library",    desc: "Hundreds of videos across strength, HIIT, mobility and more — updated weekly." },
-  { icon: "🥗", title: "Nutrition Plans",   desc: "Recipes, meal plans and macros designed to fuel your training." },
-  { icon: "💬", title: "Community Chat",    desc: "Train alongside David's community. Group motivation, real accountability." },
-  { icon: "🔒", title: "Private Coaching",  desc: "Direct 1:1 messages with Coach David. Elite-only personalized guidance." },
-  { icon: "📈", title: "Progress Tracking", desc: "Upload your photos and videos. Watch your transformation over time." },
-  { icon: "📅", title: "Book Sessions",     desc: "Schedule in-person or online sessions directly through the platform." },
-];
+};
 
 export default function LandingPage() {
+  const [lang, setLang] = useState<"en" | "es">("en");
+  const t = translations[lang];
+
   return (
     <div style={{ background: "#080808", minHeight: "100vh", color: "#fff", fontFamily: "Inter, sans-serif" }}
       className="ambient">
@@ -59,7 +146,7 @@ export default function LandingPage() {
         background: "rgba(8,8,8,0.9)", backdropFilter: "blur(20px)",
         borderBottom: "0.5px solid rgba(201,168,76,0.1)",
       }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="landing-nav-inner" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
 
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -76,10 +163,33 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Nav links + CTA */}
+          {/* Nav links + Lang toggle + CTA */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Language toggle */}
+            <div style={{
+              display: "flex", alignItems: "center",
+              background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)",
+              borderRadius: 8, overflow: "hidden", marginRight: 4,
+            }}>
+              {(["en", "es"] as const).map(l => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  style={{
+                    padding: "6px 12px", border: "none", cursor: "pointer",
+                    fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+                    background: lang === l ? "rgba(201,168,76,0.15)" : "transparent",
+                    color: lang === l ? G : "#52525b",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
             <Link href="/login" style={{ fontSize: 13, fontWeight: 500, color: "#71717a", textDecoration: "none", padding: "8px 14px", borderRadius: 8, transition: "all 0.2s" }}>
-              Sign In
+              {t.navSignIn}
             </Link>
             <Link href="/register" style={{
               fontSize: 13, fontWeight: 700, color: "#080808", textDecoration: "none",
@@ -87,7 +197,7 @@ export default function LandingPage() {
               background: `linear-gradient(135deg, ${G}, #e8d5a3)`,
               boxShadow: "0 0 20px rgba(201,168,76,0.25)",
             }}>
-              Join Now
+              {t.navJoin}
             </Link>
           </div>
         </div>
@@ -97,7 +207,7 @@ export default function LandingPage() {
       <section style={{
         maxWidth: 1200, margin: "0 auto", padding: "80px 32px 60px",
         display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center",
-      }} className="fade-up">
+      }} className="fade-up hero-section">
 
         {/* Left — Text */}
         <div>
@@ -106,18 +216,17 @@ export default function LandingPage() {
             color: G, background: "rgba(201,168,76,0.08)", border: "0.5px solid rgba(201,168,76,0.25)",
             borderRadius: 20, padding: "5px 14px", marginBottom: 24,
           }}>
-            MIAMI · HOUSTON · ONLINE
+            {t.heroBadge}
           </span>
 
-          <h1 style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.1, color: "#fff", marginBottom: 24, letterSpacing: -0.5 }}>
-            Train with the{" "}
-            <span className="text-gradient">best version</span>
-            <br />of yourself.
+          <h1 className="hero-h1" style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.1, color: "#fff", marginBottom: 24, letterSpacing: -0.5 }}>
+            {t.heroH1a}{" "}
+            <span className="text-gradient">{t.heroH1b}</span>
+            <br />{t.heroH1c}
           </h1>
 
           <p style={{ fontSize: 17, color: "#a1a1aa", lineHeight: 1.7, marginBottom: 36, maxWidth: 440 }}>
-            Coach David brings elite fitness, real nutrition, and personal accountability
-            to one platform. Built for people who are serious about results.
+            {t.heroDesc}
           </p>
 
           <div style={{ display: "flex", gap: 14, marginBottom: 52, flexWrap: "wrap" }}>
@@ -127,25 +236,20 @@ export default function LandingPage() {
               background: `linear-gradient(135deg, ${G}, #e8d5a3)`,
               boxShadow: "0 0 32px rgba(201,168,76,0.3)",
             }}>
-              Start Your Journey →
+              {t.heroCta1}
             </Link>
             <Link href="#pricing" style={{
               fontSize: 14, fontWeight: 600, color: "#a1a1aa", textDecoration: "none",
               padding: "14px 28px", borderRadius: 12,
               background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)",
             }}>
-              See Pricing
+              {t.heroCta2}
             </Link>
           </div>
 
           {/* Stats */}
-          <div style={{ display: "flex", gap: 40 }}>
-            {[
-              { value: "162K+", label: "Followers" },
-              { value: "2,700+", label: "Posts" },
-              { value: "3 Tiers", label: "Membership" },
-              { value: "Houston", label: "& Miami" },
-            ].map(s => (
+          <div className="hero-stats" style={{ display: "flex", gap: 40 }}>
+            {t.stats.map(s => (
               <div key={s.label}>
                 <div className="text-gradient" style={{ fontSize: 22, fontWeight: 900 }}>{s.value}</div>
                 <div style={{ fontSize: 10, color: "#52525b", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginTop: 4 }}>{s.label}</div>
@@ -155,7 +259,7 @@ export default function LandingPage() {
         </div>
 
         {/* Right — David's Photo */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <div className="hero-photo" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
           <div style={{
             position: "relative",
             width: "100%", maxWidth: 460,
@@ -192,7 +296,7 @@ export default function LandingPage() {
                   Pedro David Perez
                 </div>
                 <div style={{ fontSize: 11, color: "#71717a", fontWeight: 500, marginTop: 2 }}>
-                  162K Followers · Houston & Miami
+                  {t.photoSub}
                 </div>
               </div>
               <Link href="/register" style={{
@@ -201,7 +305,7 @@ export default function LandingPage() {
                 background: `linear-gradient(135deg, ${G}, #e8d5a3)`,
                 boxShadow: "0 0 16px rgba(201,168,76,0.3)",
               }}>
-                Train Now →
+                {t.photoBtn}
               </Link>
             </div>
 
@@ -212,25 +316,25 @@ export default function LandingPage() {
               borderRadius: 20, padding: "5px 12px",
               fontSize: 9, fontWeight: 800, color: G, letterSpacing: 2,
             }}>
-              ELITE COACH
+              {t.photoBadge}
             </div>
           </div>
         </div>
       </section>
 
       {/* ── FEATURES ───────────────────────────── */}
-      <section style={{ padding: "80px 32px", maxWidth: 1200, margin: "0 auto" }}>
+      <section className="landing-section" style={{ padding: "80px 32px", maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <span style={{
             fontSize: 10, fontWeight: 800, letterSpacing: 3, color: G,
             background: "rgba(201,168,76,0.08)", border: "0.5px solid rgba(201,168,76,0.2)",
             borderRadius: 20, padding: "5px 14px", display: "inline-block", marginBottom: 16,
-          }}>EVERYTHING YOU NEED</span>
-          <h2 style={{ fontSize: 38, fontWeight: 900, color: "#fff" }}>One platform. Total focus.</h2>
+          }}>{t.featBadge}</span>
+          <h2 className="section-h2" style={{ fontSize: 38, fontWeight: 900, color: "#fff" }}>{t.featH2}</h2>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
-          {features.map(f => (
+          {t.features.map(f => (
             <div key={f.title} style={{
               background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(201,168,76,0.1)",
               borderRadius: 18, padding: "24px 22px",
@@ -250,19 +354,19 @@ export default function LandingPage() {
       </section>
 
       {/* ── PRICING ────────────────────────────── */}
-      <section id="pricing" style={{ padding: "80px 32px", maxWidth: 1200, margin: "0 auto" }}>
+      <section id="pricing" className="landing-section" style={{ padding: "80px 32px", maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <span style={{
             fontSize: 10, fontWeight: 800, letterSpacing: 3, color: G,
             background: "rgba(201,168,76,0.08)", border: "0.5px solid rgba(201,168,76,0.2)",
             borderRadius: 20, padding: "5px 14px", display: "inline-block", marginBottom: 16,
-          }}>MEMBERSHIP PLANS</span>
-          <h2 style={{ fontSize: 38, fontWeight: 900, color: "#fff", marginBottom: 10 }}>Choose your level.</h2>
-          <p style={{ fontSize: 14, color: "#52525b" }}>Cancel anytime. No contracts.</p>
+          }}>{t.pricingBadge}</span>
+          <h2 className="section-h2" style={{ fontSize: 38, fontWeight: 900, color: "#fff", marginBottom: 10 }}>{t.pricingH2}</h2>
+          <p style={{ fontSize: 14, color: "#52525b" }}>{t.pricingSub}</p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-          {plans.map(plan => (
+        <div className="pricing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+          {t.plans.map(plan => (
             <div key={plan.name} style={{
               position: "relative",
               background: plan.highlight
@@ -278,12 +382,12 @@ export default function LandingPage() {
                   position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)",
                   fontSize: 10, fontWeight: 800, letterSpacing: 2, color: "#080808",
                   background: `linear-gradient(135deg, ${G}, #e8d5a3)`,
-                  padding: "5px 16px", borderRadius: 20,
-                }}>MOST POPULAR</div>
+                  padding: "5px 16px", borderRadius: 20, whiteSpace: "nowrap",
+                }}>{plan.tag}</div>
               )}
 
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 2, color: G, marginBottom: 16 }}>
-                {plan.tag}
+                {plan.highlight ? "" : plan.tag}
               </div>
 
               <div style={{ fontSize: 38, fontWeight: 900, color: "#fff", lineHeight: 1, marginBottom: 4 }}>
@@ -325,7 +429,7 @@ export default function LandingPage() {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 18 }}>🔒</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#a1a1aa" }}>UNLOCK EXCLUSIVE TRAINING</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#a1a1aa" }}>{t.ctaLock}</span>
           </div>
           <Link href="/register" style={{
             textDecoration: "none", padding: "12px 28px", borderRadius: 12,
@@ -333,7 +437,7 @@ export default function LandingPage() {
             background: `linear-gradient(135deg, ${G}, #e8d5a3)`,
             boxShadow: "0 0 20px rgba(201,168,76,0.25)",
           }}>
-            START YOUR TRANSFORMATION →
+            {t.ctaBtn}
           </Link>
         </div>
       </section>
@@ -343,7 +447,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
 
           {/* Top row */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 28 }}>
+          <div className="footer-top" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 28 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(201,168,76,0.1)", border: "0.5px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: G }}>D</div>
               <div>
@@ -352,8 +456,8 @@ export default function LandingPage() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 20, fontSize: 12, color: "#52525b" }}>
-              <Link href="/login" style={{ color: "#52525b", textDecoration: "none" }}>Sign In</Link>
-              <Link href="/register" style={{ color: G, textDecoration: "none", fontWeight: 600 }}>Join Now</Link>
+              <Link href="/login" style={{ color: "#52525b", textDecoration: "none" }}>{t.footerSignIn}</Link>
+              <Link href="/register" style={{ color: G, textDecoration: "none", fontWeight: 600 }}>{t.footerJoin}</Link>
             </div>
           </div>
 
@@ -365,7 +469,7 @@ export default function LandingPage() {
             gap: 14, flexWrap: "wrap",
           }}>
             <span style={{ fontSize: 10, color: "#52525b", letterSpacing: 0.5 }}>
-              Designed &amp; built by
+              {t.footerBuiltBy}
             </span>
             <a
               href="https://makaiusgroup.com"
@@ -392,7 +496,7 @@ export default function LandingPage() {
               <span style={{ fontSize: 9, color: "#52525b" }}>↗</span>
             </a>
             <span style={{ fontSize: 10, color: "#3f3f46", letterSpacing: 0.5 }}>
-              Digital solutions for creators &amp; coaches
+              {t.footerTagline}
             </span>
           </div>
 
