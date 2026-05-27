@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation";
 const G = "#c9a84c";
 
 const navItems = [
-  { href: "/dashboard",  label: "Dashboard",  icon: "⊞" },
-  { href: "/videos",     label: "Workouts",   icon: "▶" },
-  { href: "/nutrition",  label: "Nutrition",  icon: "🥗" },
-  { href: "/progress",   label: "Progress",   icon: "📈" },
-  { href: "/chat",       label: "Community",  icon: "💬" },
-  { href: "/schedule",   label: "Schedule",   icon: "📅" },
-  { href: "/settings",   label: "Profile",    icon: "👤" },
+  { href: "/dashboard",  label: "Dashboard",  icon: "⊞",  elite: false },
+  { href: "/videos",     label: "Workouts",   icon: "▶",  elite: false },
+  { href: "/nutrition",  label: "Nutrition",  icon: "🥗", elite: false },
+  { href: "/progress",   label: "Progress",   icon: "📈", elite: false },
+  { href: "/chat",       label: "Community",  icon: "💬", elite: false },
+  { href: "/messages",   label: "Messages",   icon: "✉",  elite: true  },
+  { href: "/schedule",   label: "Schedule",   icon: "📅", elite: false },
+  { href: "/settings",   label: "Profile",    icon: "👤", elite: false },
 ];
 
 const PLAN_COLOR: Record<string, string> = {
@@ -67,7 +68,14 @@ export default function Sidebar({ userName, userInitial, plan, isAdmin }: Props)
             className={`nav-link${isActive(item.href) ? " active" : ""}`}
           >
             <span style={{ fontSize: 14, width: 20, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
-            <span>{item.label}</span>
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {item.elite && plan !== "elite" && (
+              <span style={{
+                fontSize: 8, fontWeight: 800, color: G, letterSpacing: 0.8,
+                background: "rgba(201,168,76,0.08)", border: "0.5px solid rgba(201,168,76,0.2)",
+                padding: "2px 5px", borderRadius: 4, textTransform: "uppercase",
+              }}>Elite</span>
+            )}
           </Link>
         ))}
 
