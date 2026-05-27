@@ -20,7 +20,7 @@ const translations = {
       { value: "162K+",  label: "Followers"   },
       { value: "2,700+", label: "Posts"        },
       { value: "3 Tiers",label: "Membership"   },
-      { value: "Houston",label: "& Miami"      },
+      { value: "Miami",  label: "& Houston"     },
     ],
     photoSub:   "162K Followers · Houston & Miami",
     photoBtn:   "Train Now →",
@@ -82,7 +82,7 @@ const translations = {
       { value: "162K+",       label: "Seguidores"   },
       { value: "2,700+",      label: "Publicaciones" },
       { value: "3 Niveles",   label: "Membresía"    },
-      { value: "Houston",     label: "& Miami"       },
+      { value: "Miami",       label: "& Houston"      },
     ],
     photoSub:   "162K Seguidores · Houston & Miami",
     photoBtn:   "Entrena ya →",
@@ -133,7 +133,7 @@ const translations = {
 };
 
 export default function LandingPage() {
-  const [lang, setLang] = useState<"en" | "es">("en");
+  const [lang, setLang] = useState<"en" | "es">("es");
   const t = translations[lang];
 
   return (
