@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/compressImage";
 
 type Upload = {
   id: string;
@@ -30,17 +31,18 @@ export default function ProgressTracker({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── File selection ──────────────────────────────────────────
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (file.size > 50 * 1024 * 1024) {
       setError("File is too large. Maximum size is 50 MB.");
       return;
     }
-    setSelectedFile(file);
     setError(null);
     setSuccess(false);
+    const compressed = await compressImage(file, 1200, 0.82);
+    setSelectedFile(compressed);
     const reader = new FileReader();
     reader.onloadend = () => setPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(compressed);
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -48,6 +50,7 @@ export default function ProgressTracker({
     setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

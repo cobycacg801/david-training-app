@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { PLAN_COLOR } from "@/lib/planUtils";
+import { compressImage } from "@/lib/compressImage";
 
 const G = "#c9a84c";
 
@@ -149,8 +150,9 @@ export default function SettingsPage({
     const file = e.target.files?.[0];
     if (!file) return;
     setAvatarUploading(true);
+    const compressed = await compressImage(file, 400, 0.85);
     const fd = new FormData();
-    fd.append("avatar", file);
+    fd.append("avatar", compressed);
     const res = await fetch("/api/profile/avatar", { method: "POST", body: fd });
     const data = await res.json();
     setAvatarUploading(false);

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PLAN_COLOR } from "@/lib/planUtils";
+import { compressImage } from "@/lib/compressImage";
 
 // ── Types ─────────────────────────────────────────────────────
 type Member = {
@@ -439,11 +440,11 @@ function RecipeModal({
   const handleImageUpload = async (file: File) => {
     setUploading(true); setErr("");
     const supabase = createClient();
-    const ext  = file.name.split(".").pop();
-    const path = `${Date.now()}.${ext}`;
+    const compressed = await compressImage(file, 1000, 0.85);
+    const path = `${Date.now()}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("recipe-images")
-      .upload(path, file, { upsert: true });
+      .upload(path, compressed, { upsert: true });
     if (upErr) { setErr("Image upload failed: " + upErr.message); setUploading(false); return; }
     const { data: { publicUrl } } = supabase.storage.from("recipe-images").getPublicUrl(path);
     setForm(f => ({ ...f, image_url: publicUrl }));
