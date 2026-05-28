@@ -173,7 +173,7 @@ body {
     padding: 48px 20px 36px !important;
     gap: 32px !important;
   }
-  .hero-photo { display: none !important; }
+  .hero-photo { display: flex !important; max-width: 360px !important; margin: 0 auto !important; }
   .hero-h1 { font-size: 32px !important; }
   .hero-stats { gap: 20px !important; flex-wrap: wrap !important; }
   .pricing-grid {
