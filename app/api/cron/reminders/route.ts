@@ -3,10 +3,25 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmail, sessionReminderEmail } from "@/lib/email";
 import { sendSMS, smsMemberReminder } from "@/lib/sms";
 
-// Called by Vercel Cron daily at 9 AM UTC
-// Sends 24-hour reminder emails + SMS to members with confirmed sessions tomorrow
+const HOUSTON = "America/Chicago";
+
+function fmtForTZ(isoStr: string, tz: string, short = false): string {
+  return new Date(isoStr).toLocaleString("en-US", {
+    timeZone: tz,
+    weekday: short ? "short" : "long",
+    month: short ? "short" : "long",
+    day: "numeric",
+    ...(short ? {} : { year: "numeric" }),
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  });
+}
+
+// Called by Vercel Cron daily at 9 AM UTC (3–4 AM Houston — bookings for next Houston day)
+// Sends 24-hour reminder emails + SMS to members with confirmed sessions tomorrow (Houston time)
 export async function GET(req: NextRequest) {
-  // Protect the cron endpoint
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,18 +29,21 @@ export async function GET(req: NextRequest) {
 
   const db = createServiceClient();
 
-  // Find confirmed sessions scheduled for tomorrow
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const start = new Date(tomorrow); start.setHours(0, 0, 0, 0);
-  const end   = new Date(tomorrow); end.setHours(23, 59, 59, 999);
+  // "Tomorrow" in Houston timezone
+  const nowHouston = new Date(new Date().toLocaleString("en-US", { timeZone: HOUSTON }));
+  const tomorrowHouston = new Date(nowHouston);
+  tomorrowHouston.setDate(nowHouston.getDate() + 1);
+
+  const tomorrowStr = tomorrowHouston.toLocaleDateString("en-CA", { timeZone: HOUSTON });
+  const startUTC = new Date(`${tomorrowStr}T00:00:00Z`).toISOString();
+  const endUTC   = new Date(`${tomorrowStr}T23:59:59Z`).toISOString();
 
   const { data: bookings, error } = await db
     .from("bookings")
     .select("*, profiles(full_name, email, phone)")
     .eq("status", "confirmed")
-    .gte("scheduled_at", start.toISOString())
-    .lte("scheduled_at", end.toISOString());
+    .gte("scheduled_at", startUTC)
+    .lte("scheduled_at", endUTC);
 
   if (error) {
     console.error("[cron/reminders] DB error:", error);
@@ -39,19 +57,29 @@ export async function GET(req: NextRequest) {
     const memberName  = (booking.profiles as any)?.full_name ?? "Member";
     const memberEmail = (booking.profiles as any)?.email     ?? null;
     const memberPhone = (booking.profiles as any)?.phone     ?? null;
+    const memberTz    = booking.member_timezone ?? null;
     const sessionType = booking.session_type === "online" ? "Online (Zoom)" : "In-Person (Houston)";
 
-    const displayDate = new Date(booking.scheduled_at).toLocaleString("en-US", {
-      weekday: "long", month: "long", day: "numeric",
-      hour: "numeric", minute: "2-digit", hour12: true,
-    });
+    // Houston time (primary — what David sees)
+    const houstonDisplay = fmtForTZ(booking.scheduled_at, HOUSTON);
+    const houstonShort   = fmtForTZ(booking.scheduled_at, HOUSTON, true);
 
-    const shortDate = new Date(booking.scheduled_at).toLocaleString("en-US", {
-      weekday: "short", month: "short", day: "numeric",
-      hour: "numeric", minute: "2-digit", hour12: true,
-    });
+    // Member's local time (if different timezone stored)
+    const memberLocalDisplay = memberTz && memberTz !== HOUSTON
+      ? fmtForTZ(booking.scheduled_at, memberTz)
+      : null;
+    const memberShort = memberLocalDisplay
+      ? fmtForTZ(booking.scheduled_at, memberTz!, true)
+      : null;
 
-    // Send email reminder
+    const displayDate = memberLocalDisplay
+      ? `${houstonDisplay}\n(${memberLocalDisplay} — your local time)`
+      : houstonDisplay;
+
+    const shortDate = memberShort
+      ? `${houstonShort} / ${memberShort} (your time)`
+      : houstonShort;
+
     if (memberEmail) {
       await sendEmail(
         memberEmail,
@@ -66,7 +94,6 @@ export async function GET(req: NextRequest) {
       emailsSent++;
     }
 
-    // Send SMS reminder
     if (memberPhone) {
       await sendSMS(
         memberPhone,

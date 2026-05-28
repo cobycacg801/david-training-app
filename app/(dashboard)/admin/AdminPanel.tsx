@@ -30,6 +30,7 @@ type Booking = {
   scheduled_at: string;
   status: "pending" | "confirmed" | "cancelled";
   notes: string | null; zoom_link: string | null; david_note: string | null;
+  member_timezone: string | null;
   created_at: string;
   profiles: { full_name: string | null; email: string | null } | null;
 };
@@ -83,15 +84,33 @@ const CAT_COLORS: Record<string, string> = {
 };
 const catColor = (c: string | null) => CAT_COLORS[c?.toLowerCase() ?? ""] ?? "#a1a1aa";
 
+const HOUSTON = "America/Chicago";
+
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 const fmtDateTime = (d: string) => {
   const dt = new Date(d);
   return {
-    date: dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-    time: dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+    date: dt.toLocaleDateString("en-US", { timeZone: HOUSTON, weekday: "short", month: "short", day: "numeric" }),
+    time: dt.toLocaleTimeString("en-US", { timeZone: HOUSTON, hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short" }),
   };
+};
+
+const fmtTZLabel = (tz: string): string => {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" }).formatToParts(new Date());
+    return parts.find(p => p.type === "timeZoneName")?.value ?? tz;
+  } catch { return tz; }
+};
+
+const fmtMemberLocal = (isoStr: string, tz: string | null): string | null => {
+  if (!tz || tz === HOUSTON) return null;
+  try {
+    return new Date(isoStr).toLocaleString("en-US", {
+      timeZone: tz, hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short",
+    });
+  } catch { return null; }
 };
 
 // ── Shared UI ─────────────────────────────────────────────────
@@ -946,6 +965,10 @@ export default function AdminPanel({
                     <div>
                       <p style={{ fontSize: 12, fontWeight: 600, color: isPast && b.status !== "cancelled" ? "#52525b" : "#fff", margin: 0 }}>{date}</p>
                       <p style={{ fontSize: 11, color: "#71717a", margin: 0 }}>{time}</p>
+                      {(() => {
+                        const ml = fmtMemberLocal(b.scheduled_at, b.member_timezone ?? null);
+                        return ml ? <p style={{ fontSize: 10, color: "#3f3f46", margin: "2px 0 0", fontStyle: "italic" }}>Member: {ml}</p> : null;
+                      })()}
                     </div>
 
                     {/* Status */}
@@ -1063,24 +1086,30 @@ export default function AdminPanel({
 
       {/* ── SCHEDULE ── */}
       {tab === "Schedule" && (() => {
-        const today = new Date();
-        const dow = today.getDay();
+        // All week computation in Houston timezone (America/Chicago)
+        const houstonDateStr = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: HOUSTON });
+        const bookingHoustonDate = (b: Booking) => new Date(b.scheduled_at).toLocaleDateString("en-CA", { timeZone: HOUSTON });
+
+        const todayStr = houstonDateStr(new Date());
+        const [ty, tm, td] = todayStr.split("-").map(Number);
+        const todayRef = new Date(ty, tm - 1, td); // local date obj for day-of-week math
+        const dow = todayRef.getDay();
         const mondayOff = dow === 0 ? -6 : 1 - dow;
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() + mondayOff + weekOffset * 7);
-        weekStart.setHours(0, 0, 0, 0);
+        const weekStartRef = new Date(ty, tm - 1, td + mondayOff + weekOffset * 7);
         const weekDays = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d;
+          const d = new Date(weekStartRef); d.setDate(weekStartRef.getDate() + i); return d;
         });
-        const todayStr = localDateStr(today);
+        const toDateStr = (d: Date) =>
+          `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
         const bookingsByDay = weekDays.map(d => {
-          const ds = localDateStr(d);
+          const ds = toDateStr(d);
           return bookings
-            .filter(b => b.status !== "cancelled" && localDateStr(new Date(b.scheduled_at)) === ds)
+            .filter(b => b.status !== "cancelled" && bookingHoustonDate(b) === ds)
             .sort((a, b2) => new Date(a.scheduled_at).getTime() - new Date(b2.scheduled_at).getTime());
         });
         const weekLabel = `${MONTH_NAMES[weekDays[0].getMonth()]} ${weekDays[0].getDate()} – ${MONTH_NAMES[weekDays[6].getMonth()]} ${weekDays[6].getDate()}, ${weekDays[6].getFullYear()}`;
         const totalThisWeek = bookingsByDay.reduce((s, d) => s + d.length, 0);
+        const isToday = (d: Date) => toDateStr(d) === todayStr;
 
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -1106,31 +1135,30 @@ export default function AdminPanel({
             <div style={{ overflowX: "auto", borderRadius: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(140px, 1fr))", gap: 8, minWidth: 700 }}>
                 {weekDays.map((d, i) => {
-                  const ds = localDateStr(d);
-                  const isToday = ds === todayStr;
                   const dayBks  = bookingsByDay[i];
                   return (
-                    <div key={i} style={{ background: isToday ? "rgba(0,242,255,0.04)" : "rgba(255,255,255,0.02)", border: `0.5px solid ${isToday ? "rgba(0,242,255,0.2)" : "rgba(255,255,255,0.07)"}`, borderRadius: 14, overflow: "hidden", minHeight: 120 }}>
+                    <div key={i} style={{ background: isToday(d) ? "rgba(0,242,255,0.04)" : "rgba(255,255,255,0.02)", border: `0.5px solid ${isToday(d) ? "rgba(0,242,255,0.2)" : "rgba(255,255,255,0.07)"}`, borderRadius: 14, overflow: "hidden", minHeight: 120 }}>
                       {/* Day header */}
                       <div style={{ padding: "10px 12px 8px", borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? "#00f2ff" : "#52525b", letterSpacing: 0.5 }}>{DAY_NAMES_SHORT[d.getDay()]}</span>
-                        <span style={{ fontSize: 15, fontWeight: 900, color: isToday ? "#00f2ff" : "#a1a1aa", width: 26, height: 26, borderRadius: "50%", background: isToday ? "rgba(0,242,255,0.12)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>{d.getDate()}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: isToday(d) ? "#00f2ff" : "#52525b", letterSpacing: 0.5 }}>{DAY_NAMES_SHORT[d.getDay()]}</span>
+                        <span style={{ fontSize: 15, fontWeight: 900, color: isToday(d) ? "#00f2ff" : "#a1a1aa", width: 26, height: 26, borderRadius: "50%", background: isToday(d) ? "rgba(0,242,255,0.12)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>{d.getDate()}</span>
                       </div>
                       {/* Bookings */}
                       <div style={{ padding: "8px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
                         {dayBks.length === 0 ? (
                           <p style={{ fontSize: 10, color: "#27272a", textAlign: "center", margin: "10px 0" }}>—</p>
                         ) : dayBks.map(b => {
-                          const bt   = new Date(b.scheduled_at);
-                          const bh   = bt.getHours();
-                          const bm   = bt.getMinutes();
-                          const tStr = `${bh === 0 ? 12 : bh > 12 ? bh - 12 : bh}:${String(bm).padStart(2,"0")} ${bh < 12 ? "AM" : "PM"}`;
+                          const tStr = new Date(b.scheduled_at).toLocaleTimeString("en-US", {
+                            timeZone: HOUSTON, hour: "numeric", minute: "2-digit", hour12: true,
+                          });
                           const isPend = b.status === "pending";
                           const isOnline = b.session_type === "online";
                           const mName = b.profiles?.full_name ?? "Member";
+                          const memberLocal = fmtMemberLocal(b.scheduled_at, b.member_timezone ?? null);
                           return (
                             <div key={b.id} style={{ borderRadius: 8, padding: "8px 10px", background: isPend ? "rgba(245,158,11,0.07)" : "rgba(62,207,142,0.06)", borderLeft: `3px solid ${isPend ? "#f59e0b" : "#3ecf8e"}`, cursor: "default" }}>
-                              <p style={{ fontSize: 11, fontWeight: 800, color: isPend ? "#f59e0b" : "#3ecf8e", margin: "0 0 3px" }}>{tStr}</p>
+                              <p style={{ fontSize: 11, fontWeight: 800, color: isPend ? "#f59e0b" : "#3ecf8e", margin: "0 0 1px" }}>{tStr} CT</p>
+                              {memberLocal && <p style={{ fontSize: 9, color: "#52525b", margin: "0 0 3px", fontStyle: "italic" }}>{memberLocal}</p>}
                               <p style={{ fontSize: 12, fontWeight: 600, color: "#fff", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mName}</p>
                               <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: isOnline ? "#00f2ff" : "#8b5cf6", background: isOnline ? "rgba(0,242,255,0.08)" : "rgba(139,92,246,0.08)", border: `0.5px solid ${isOnline ? "rgba(0,242,255,0.2)" : "rgba(139,92,246,0.2)"}`, borderRadius: 20, padding: "2px 6px" }}>
                                 {isOnline ? "Online" : "In-Person"}

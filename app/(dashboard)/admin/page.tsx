@@ -39,7 +39,7 @@ export default async function AdminPage() {
       .order("created_at", { ascending: false }),
     db
       .from("bookings")
-      .select("id, user_id, session_type, scheduled_at, status, notes, zoom_link, david_note, created_at, profiles(full_name, email)")
+      .select("id, user_id, session_type, scheduled_at, status, notes, zoom_link, david_note, member_timezone, created_at, profiles(full_name, email)")
       .order("scheduled_at", { ascending: false }),
   ]);
 

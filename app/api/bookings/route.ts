@@ -9,9 +9,25 @@ import {
   smsNewBookingDavid,
 } from "@/lib/sms";
 
+const HOUSTON = "America/Chicago";
+
+function fmtForTZ(isoStr: string, tz: string, short = false): string {
+  return new Date(isoStr).toLocaleString("en-US", {
+    timeZone: tz,
+    weekday: short ? "short" : "long",
+    month: short ? "short" : "long",
+    day: "numeric",
+    ...(short ? {} : { year: "numeric" }),
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { userId, sessionType, scheduledAt, notes, memberName, memberEmail } =
+    const { userId, sessionType, scheduledAt, notes, memberName, memberEmail, memberTimezone } =
       await req.json();
 
     if (!userId || !sessionType || !scheduledAt) {
@@ -20,15 +36,15 @@ export async function POST(req: NextRequest) {
 
     const db = createServiceClient();
 
-    // Create the booking
     const { data: booking, error } = await db
       .from("bookings")
       .insert({
-        user_id:      userId,
-        session_type: sessionType,
-        scheduled_at: scheduledAt,
-        status:       "pending",
-        notes:        notes || null,
+        user_id:          userId,
+        session_type:     sessionType,
+        scheduled_at:     scheduledAt,
+        status:           "pending",
+        notes:            notes || null,
+        member_timezone:  memberTimezone || null,
       })
       .select()
       .single();
@@ -37,7 +53,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Fetch member's phone number for SMS
     const { data: memberProfile } = await db
       .from("profiles")
       .select("phone")
@@ -45,22 +60,21 @@ export async function POST(req: NextRequest) {
       .single();
 
     const memberPhone = memberProfile?.phone ?? null;
-
-    const displayDate = new Date(scheduledAt).toLocaleString("en-US", {
-      weekday: "long", month: "long", day: "numeric",
-      year: "numeric", hour: "numeric", minute: "2-digit", hour12: true,
-    });
-
-    const shortDate = new Date(scheduledAt).toLocaleString("en-US", {
-      weekday: "short", month: "short", day: "numeric",
-      hour: "numeric", minute: "2-digit", hour12: true,
-    });
-
     const smsType = sessionType === "online" ? "Online (Zoom)" : "In-Person (Houston)";
 
-    // Send all notifications in parallel (non-blocking)
+    // Always show Houston CT time (David's timezone)
+    const houstonDisplay = fmtForTZ(scheduledAt, HOUSTON);
+    const houstonShort   = fmtForTZ(scheduledAt, HOUSTON, true);
+
+    // If member is in a different timezone, show their local time too
+    const memberTz = memberTimezone && memberTimezone !== HOUSTON ? memberTimezone : null;
+    const memberLocalDisplay = memberTz ? fmtForTZ(scheduledAt, memberTz) : null;
+
+    const displayDate = memberLocalDisplay
+      ? `${houstonDisplay}\n(${memberLocalDisplay} — your local time)`
+      : houstonDisplay;
+
     await Promise.allSettled([
-      // ── Email: notify David ──
       sendEmail(
         DAVID_EMAIL,
         `📅 New session request from ${memberName}`,
@@ -71,7 +85,6 @@ export async function POST(req: NextRequest) {
           notes: notes ?? "",
         })
       ),
-      // ── Email: confirm receipt to member ──
       sendEmail(
         memberEmail,
         "Booking received — David Training",
@@ -81,10 +94,9 @@ export async function POST(req: NextRequest) {
           scheduledAt: displayDate,
         })
       ),
-      // ── SMS: ping David immediately ──
       sendSMS(
         DAVID_PHONE,
-        smsNewBookingDavid({ memberName, sessionType: smsType, scheduledAt: shortDate })
+        smsNewBookingDavid({ memberName, sessionType: smsType, scheduledAt: houstonShort })
       ),
     ]);
 
