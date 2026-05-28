@@ -43,12 +43,16 @@ export default async function AdminPage() {
       .order("scheduled_at", { ascending: false }),
   ]);
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.davidabrajin.com";
+  const calendarUrl = `${appUrl}/api/calendar?token=${process.env.CRON_SECRET ?? ""}`;
+
   return (
     <AdminPanel
       members={(members as any[]) ?? []}
       videos={(videos as any[]) ?? []}
       recipes={(recipes as any[]) ?? []}
       bookings={(bookings as any[]) ?? []}
+      calendarUrl={calendarUrl}
     />
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PLAN_COLOR } from "@/lib/planUtils";
 import { compressImage } from "@/lib/compressImage";
@@ -33,9 +33,31 @@ type Booking = {
   created_at: string;
   profiles: { full_name: string | null; email: string | null } | null;
 };
+type WeeklyAvail = {
+  day_of_week: number;
+  enabled: boolean;
+  start_hour: number;
+  end_hour: number;
+};
+type BlockedDate = {
+  id: string;
+  date: string;
+  reason: string | null;
+};
 
 // ── Constants ─────────────────────────────────────────────────
-const TABS = ["Overview", "Members", "Bookings", "Videos", "Recipes"];
+const TABS = ["Overview", "Members", "Bookings", "Videos", "Recipes", "Schedule", "Availability"];
+const DAY_NAMES_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_NAMES_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const HOUR_OPTIONS = Array.from({ length: 16 }, (_, i) => i + 6); // 6am–9pm
+
+const fmtHour = (h: number) => {
+  if (h === 0) return "12 AM"; if (h === 12) return "12 PM";
+  return h < 12 ? `${h} AM` : `${h - 12} PM`;
+};
+const localDateStr = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
 const PLAN_BG: Record<string, string> = {
   base: "rgba(161,161,170,0.1)", pro: "rgba(0,242,255,0.1)", elite: "rgba(139,92,246,0.12)",
@@ -590,11 +612,13 @@ export default function AdminPanel({
   videos: initialVideos,
   recipes: initialRecipes,
   bookings: initialBookings,
+  calendarUrl,
 }: {
-  members:  Member[];
-  videos:   Video[];
-  recipes:  Recipe[];
-  bookings: Booking[];
+  members:     Member[];
+  videos:      Video[];
+  recipes:     Recipe[];
+  bookings:    Booking[];
+  calendarUrl: string;
 }) {
   const [tab, setTab]         = useState("Overview");
   const [members]             = useState<Member[]>(initialMembers);
@@ -609,6 +633,36 @@ export default function AdminPanel({
   const [videoModal,  setVideoModal]  = useState<{ open: boolean; editing: Video | null }>({ open: false, editing: null });
   const [recipeModal, setRecipeModal] = useState<{ open: boolean; editing: Recipe | null }>({ open: false, editing: null });
   const [deleteTarget, setDeleteTarget] = useState<{ type: "video" | "recipe"; id: string; title: string } | null>(null);
+
+  // ── Schedule / Availability state ─────────────────────────
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [weeklyAvail, setWeeklyAvail] = useState<WeeklyAvail[]>(
+    [0,1,2,3,4,5,6].map(d => ({ day_of_week: d, enabled: d !== 0, start_hour: 9, end_hour: 18 }))
+  );
+  const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
+  const [availLoaded,  setAvailLoaded]  = useState(false);
+  const [newBlockDate,   setNewBlockDate]   = useState("");
+  const [newBlockReason, setNewBlockReason] = useState("");
+  const [availSaving, setAvailSaving] = useState(false);
+  const [blockSaving, setBlockSaving] = useState(false);
+  const [availMsg,    setAvailMsg]    = useState("");
+  const [calCopied,   setCalCopied]   = useState(false);
+
+  useEffect(() => {
+    if (tab !== "Availability" && tab !== "Schedule") return;
+    if (availLoaded) return;
+    (async () => {
+      const [ar, br] = await Promise.all([
+        fetch("/api/availability"),
+        fetch("/api/availability/blocked"),
+      ]);
+      const { weekly } = await ar.json();
+      const blocked: BlockedDate[] = await br.json();
+      if (weekly?.length) setWeeklyAvail(weekly);
+      setBlockedDates(blocked ?? []);
+      setAvailLoaded(true);
+    })();
+  }, [tab, availLoaded]);
 
   // ── Booking handlers ─────────────────────────────────────
   const handleBookingUpdated = (updatedRow: any) => {
@@ -1003,6 +1057,236 @@ export default function AdminPanel({
               </div>
             ))}
             {recipes.length === 0 && <p style={{ fontSize: 13, color: "#52525b", padding: "20px", textAlign: "center" }}>No recipes yet. Add your first one.</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ── SCHEDULE ── */}
+      {tab === "Schedule" && (() => {
+        const today = new Date();
+        const dow = today.getDay();
+        const mondayOff = dow === 0 ? -6 : 1 - dow;
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() + mondayOff + weekOffset * 7);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekDays = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d;
+        });
+        const todayStr = localDateStr(today);
+        const bookingsByDay = weekDays.map(d => {
+          const ds = localDateStr(d);
+          return bookings
+            .filter(b => b.status !== "cancelled" && localDateStr(new Date(b.scheduled_at)) === ds)
+            .sort((a, b2) => new Date(a.scheduled_at).getTime() - new Date(b2.scheduled_at).getTime());
+        });
+        const weekLabel = `${MONTH_NAMES[weekDays[0].getMonth()]} ${weekDays[0].getDate()} – ${MONTH_NAMES[weekDays[6].getMonth()]} ${weekDays[6].getDate()}, ${weekDays[6].getFullYear()}`;
+        const totalThisWeek = bookingsByDay.reduce((s, d) => s + d.length, 0);
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+
+            {/* Week nav row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 800, color: "#fff", margin: 0 }}>Week of {weekLabel}</h2>
+                <p style={{ fontSize: 12, color: "#52525b", margin: "3px 0 0" }}>
+                  {totalThisWeek} session{totalThisWeek !== 1 ? "s" : ""} this week
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button onClick={() => setWeekOffset(0)} style={{ padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", background: weekOffset === 0 ? "rgba(0,242,255,0.08)" : "rgba(255,255,255,0.03)", border: `0.5px solid ${weekOffset === 0 ? "rgba(0,242,255,0.3)" : "rgba(255,255,255,0.08)"}`, color: weekOffset === 0 ? "#00f2ff" : "#71717a" }}>
+                  This Week
+                </button>
+                <button onClick={() => setWeekOffset(w => w - 1)} style={{ padding: "5px 14px", borderRadius: 8, fontSize: 13, cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.08)", color: "#a1a1aa" }}>‹</button>
+                <button onClick={() => setWeekOffset(w => w + 1)} style={{ padding: "5px 14px", borderRadius: 8, fontSize: 13, cursor: "pointer", background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.08)", color: "#a1a1aa" }}>›</button>
+              </div>
+            </div>
+
+            {/* Week grid */}
+            <div style={{ overflowX: "auto", borderRadius: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(140px, 1fr))", gap: 8, minWidth: 700 }}>
+                {weekDays.map((d, i) => {
+                  const ds = localDateStr(d);
+                  const isToday = ds === todayStr;
+                  const dayBks  = bookingsByDay[i];
+                  return (
+                    <div key={i} style={{ background: isToday ? "rgba(0,242,255,0.04)" : "rgba(255,255,255,0.02)", border: `0.5px solid ${isToday ? "rgba(0,242,255,0.2)" : "rgba(255,255,255,0.07)"}`, borderRadius: 14, overflow: "hidden", minHeight: 120 }}>
+                      {/* Day header */}
+                      <div style={{ padding: "10px 12px 8px", borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: isToday ? "#00f2ff" : "#52525b", letterSpacing: 0.5 }}>{DAY_NAMES_SHORT[d.getDay()]}</span>
+                        <span style={{ fontSize: 15, fontWeight: 900, color: isToday ? "#00f2ff" : "#a1a1aa", width: 26, height: 26, borderRadius: "50%", background: isToday ? "rgba(0,242,255,0.12)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>{d.getDate()}</span>
+                      </div>
+                      {/* Bookings */}
+                      <div style={{ padding: "8px 8px", display: "flex", flexDirection: "column", gap: 6 }}>
+                        {dayBks.length === 0 ? (
+                          <p style={{ fontSize: 10, color: "#27272a", textAlign: "center", margin: "10px 0" }}>—</p>
+                        ) : dayBks.map(b => {
+                          const bt   = new Date(b.scheduled_at);
+                          const bh   = bt.getHours();
+                          const bm   = bt.getMinutes();
+                          const tStr = `${bh === 0 ? 12 : bh > 12 ? bh - 12 : bh}:${String(bm).padStart(2,"0")} ${bh < 12 ? "AM" : "PM"}`;
+                          const isPend = b.status === "pending";
+                          const isOnline = b.session_type === "online";
+                          const mName = b.profiles?.full_name ?? "Member";
+                          return (
+                            <div key={b.id} style={{ borderRadius: 8, padding: "8px 10px", background: isPend ? "rgba(245,158,11,0.07)" : "rgba(62,207,142,0.06)", borderLeft: `3px solid ${isPend ? "#f59e0b" : "#3ecf8e"}`, cursor: "default" }}>
+                              <p style={{ fontSize: 11, fontWeight: 800, color: isPend ? "#f59e0b" : "#3ecf8e", margin: "0 0 3px" }}>{tStr}</p>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: "#fff", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mName}</p>
+                              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: isOnline ? "#00f2ff" : "#8b5cf6", background: isOnline ? "rgba(0,242,255,0.08)" : "rgba(139,92,246,0.08)", border: `0.5px solid ${isOnline ? "rgba(0,242,255,0.2)" : "rgba(139,92,246,0.2)"}`, borderRadius: 20, padding: "2px 6px" }}>
+                                {isOnline ? "Online" : "In-Person"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* iCal subscription */}
+            <div style={{ background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px" }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "#a1a1aa", marginBottom: 8 }}>
+                📱 Subscribe to your calendar
+              </p>
+              <p style={{ fontSize: 11, color: "#52525b", marginBottom: 10 }}>
+                Add this URL to iPhone Calendar (File → New Calendar Subscription) or Google Calendar (+ Other calendars → From URL). It auto-updates every hour.
+              </p>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <input readOnly value={calendarUrl} style={{ flex: 1, minWidth: 0, background: "rgba(0,0,0,0.4)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#71717a", fontFamily: "monospace", outline: "none" }} />
+                <button onClick={() => { navigator.clipboard.writeText(calendarUrl); setCalCopied(true); setTimeout(() => setCalCopied(false), 2000); }} style={{ padding: "8px 16px", borderRadius: 8, background: calCopied ? "rgba(62,207,142,0.12)" : "rgba(255,255,255,0.05)", border: `0.5px solid ${calCopied ? "rgba(62,207,142,0.3)" : "rgba(255,255,255,0.1)"}`, fontSize: 12, fontWeight: 700, color: calCopied ? "#3ecf8e" : "#a1a1aa", cursor: "pointer", flexShrink: 0 }}>
+                  {calCopied ? "✓ Copied!" : "Copy URL"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── AVAILABILITY ── */}
+      {tab === "Availability" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+
+          {/* Weekly Schedule */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 800, color: "#fff", margin: 0 }}>Weekly Schedule</p>
+                <p style={{ fontSize: 11, color: "#52525b", margin: "3px 0 0" }}>Set which days and hours members can book sessions</p>
+              </div>
+            </div>
+
+            <div style={{ padding: "12px 20px", display: "flex", flexDirection: "column", gap: 4 }}>
+              {weeklyAvail.map((avail, idx) => (
+                <div key={avail.day_of_week} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: idx < 6 ? "0.5px solid rgba(255,255,255,0.04)" : "none", flexWrap: "wrap" }}>
+                  {/* Day name */}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: avail.enabled ? "#fff" : "#52525b", width: 90, flexShrink: 0 }}>
+                    {DAY_NAMES_FULL[avail.day_of_week]}
+                  </span>
+                  {/* Toggle */}
+                  <button onClick={() => setWeeklyAvail(prev => prev.map(a => a.day_of_week === avail.day_of_week ? { ...a, enabled: !a.enabled } : a))} style={{ width: 44, height: 24, borderRadius: 12, cursor: "pointer", border: "none", background: avail.enabled ? "rgba(62,207,142,0.2)" : "rgba(255,255,255,0.06)", borderColor: avail.enabled ? "rgba(62,207,142,0.4)" : "rgba(255,255,255,0.1)", borderStyle: "solid", borderWidth: "0.5px", position: "relative", transition: "all 0.2s", flexShrink: 0 }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", background: avail.enabled ? "#3ecf8e" : "#52525b", position: "absolute", top: 2, left: avail.enabled ? 22 : 2, transition: "all 0.2s" }} />
+                  </button>
+                  {/* Hours */}
+                  {avail.enabled ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, color: "#52525b" }}>From</span>
+                      <select value={avail.start_hour} onChange={e => setWeeklyAvail(prev => prev.map(a => a.day_of_week === avail.day_of_week ? { ...a, start_hour: Number(e.target.value) } : a))} style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "5px 10px", fontSize: 12, color: "#fff", outline: "none", cursor: "pointer" }}>
+                        {HOUR_OPTIONS.map(h => <option key={h} value={h} style={{ background: "#111" }}>{fmtHour(h)}</option>)}
+                      </select>
+                      <span style={{ fontSize: 11, color: "#52525b" }}>to</span>
+                      <select value={avail.end_hour} onChange={e => setWeeklyAvail(prev => prev.map(a => a.day_of_week === avail.day_of_week ? { ...a, end_hour: Number(e.target.value) } : a))} style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "5px 10px", fontSize: 12, color: "#fff", outline: "none", cursor: "pointer" }}>
+                        {HOUR_OPTIONS.filter(h => h > avail.start_hour).map(h => <option key={h} value={h} style={{ background: "#111" }}>{fmtHour(h)}</option>)}
+                      </select>
+                      <span style={{ fontSize: 11, color: "#3f3f46" }}>
+                        ({avail.end_hour - avail.start_hour} hr{avail.end_hour - avail.start_hour !== 1 ? "s" : ""})
+                      </span>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 11, color: "#3f3f46", fontStyle: "italic" }}>Closed — no bookings</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ padding: "14px 20px", borderTop: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 12 }}>
+              <button onClick={async () => {
+                setAvailSaving(true); setAvailMsg("");
+                const res = await fetch("/api/availability", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ slots: weeklyAvail }),
+                });
+                setAvailMsg(res.ok ? "✓ Schedule saved!" : "⚠ Save failed");
+                setAvailSaving(false);
+                setTimeout(() => setAvailMsg(""), 3000);
+              }} disabled={availSaving} style={{ padding: "9px 22px", borderRadius: 10, background: "linear-gradient(135deg,rgba(62,207,142,0.12),rgba(62,207,142,0.22))", border: "0.5px solid rgba(62,207,142,0.35)", fontSize: 13, fontWeight: 700, color: "#3ecf8e", cursor: "pointer" }}>
+                {availSaving ? "Saving…" : "Save Schedule"}
+              </button>
+              {availMsg && <span style={{ fontSize: 12, color: availMsg.startsWith("✓") ? "#3ecf8e" : "#f87171" }}>{availMsg}</span>}
+            </div>
+          </div>
+
+          {/* Blocked Dates */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 16, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>
+              <p style={{ fontSize: 14, fontWeight: 800, color: "#fff", margin: 0 }}>Blocked Dates</p>
+              <p style={{ fontSize: 11, color: "#52525b", margin: "3px 0 0" }}>Block specific days — vacations, holidays, or anything else</p>
+            </div>
+
+            {/* Add new blocked date */}
+            <div style={{ padding: "16px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.06)", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: "#52525b", letterSpacing: 1, textTransform: "uppercase" }}>Date</label>
+                <input type="date" value={newBlockDate} onChange={e => setNewBlockDate(e.target.value)} style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#fff", outline: "none", colorScheme: "dark" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 160 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: "#52525b", letterSpacing: 1, textTransform: "uppercase" }}>Reason <span style={{ color: "#3f3f46" }}>(optional)</span></label>
+                <input type="text" placeholder="e.g. Vacation, Holiday…" value={newBlockReason} onChange={e => setNewBlockReason(e.target.value)} style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#fff", outline: "none" }} />
+              </div>
+              <button onClick={async () => {
+                if (!newBlockDate) return;
+                setBlockSaving(true);
+                const res = await fetch("/api/availability/blocked", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ date: newBlockDate, reason: newBlockReason }),
+                });
+                if (res.ok) {
+                  const bd: BlockedDate = await res.json();
+                  setBlockedDates(prev => [...prev, bd].sort((a, b2) => a.date.localeCompare(b2.date)));
+                  setNewBlockDate(""); setNewBlockReason("");
+                }
+                setBlockSaving(false);
+              }} disabled={!newBlockDate || blockSaving} style={{ padding: "8px 18px", borderRadius: 8, background: "rgba(245,158,11,0.1)", border: "0.5px solid rgba(245,158,11,0.3)", fontSize: 12, fontWeight: 700, color: "#f59e0b", cursor: "pointer", opacity: !newBlockDate ? 0.4 : 1, flexShrink: 0 }}>
+                {blockSaving ? "Blocking…" : "+ Block Date"}
+              </button>
+            </div>
+
+            {/* Blocked dates list */}
+            <div style={{ padding: "8px 20px" }}>
+              {blockedDates.length === 0 ? (
+                <p style={{ fontSize: 12, color: "#3f3f46", padding: "16px 0", textAlign: "center" }}>No blocked dates — members can book any enabled day.</p>
+              ) : blockedDates.map(bd => {
+                const [y, m, d] = bd.date.split("-").map(Number);
+                const dateLabel = new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+                return (
+                  <div key={bd.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "0.5px solid rgba(255,255,255,0.04)", gap: 12 }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", margin: 0 }}>{dateLabel}</p>
+                      {bd.reason && <p style={{ fontSize: 11, color: "#71717a", margin: "2px 0 0", fontStyle: "italic" }}>{bd.reason}</p>}
+                    </div>
+                    <button onClick={async () => {
+                      const res = await fetch(`/api/availability/blocked/${bd.date}`, { method: "DELETE" });
+                      if (res.ok) setBlockedDates(prev => prev.filter(x => x.id !== bd.id));
+                    }} style={{ padding: "4px 12px", borderRadius: 7, background: "rgba(239,68,68,0.08)", border: "0.5px solid rgba(239,68,68,0.2)", fontSize: 11, fontWeight: 700, color: "#f87171", cursor: "pointer", flexShrink: 0 }}>
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
